@@ -1,0 +1,33 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /deals/{txnId} {
+      // Agent app queries the whole collection to build "All transactions" —
+      // only allowed when signed in as the agent.
+      allow list: if request.auth != null;
+
+      // A client fetches exactly one deal, by its transaction ID, which
+      // only they and their agent know. This is an "unlisted ID" pattern:
+      // safe against strangers browsing your deals, not against someone
+      // who already has a specific ID guessing at last name/zip. Good
+      // enough for an MVP; see the README for how to harden this further
+      // (Cloud Function + custom auth token) before handling real PII.
+      allow get: if true;
+
+      // Only the signed-in agent can create/edit deals, mark milestones,
+      // or edit notes.
+      allow create, update, delete: if request.auth != null;
+
+      match /messages/{messageId} {
+        // Both the agent (authenticated) and the client (not authenticated)
+        // need to post here, so this subcollection is intentionally looser
+        // than the parent deal document. It cannot be used to modify
+        // milestones, price, or any other deal field.
+        allow read: if true;
+        allow create: if request.resource.data.keys().hasOnly(['from', 'text', 'createdAt'])
+                       && request.resource.data.from in ['agent', 'client'];
+        allow update, delete: if false;
+      }
+    }
+  }
+}
