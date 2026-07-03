@@ -3,7 +3,7 @@ import {
   onSnapshot, query, orderBy, addDoc, serverTimestamp, writeBatch,
 } from 'firebase/firestore';
 import { db } from '../firebase';
-import { defaultDeals } from './defaultDeals';
+import { defaultDeals, MS_TEMPLATE } from './defaultDeals';
 
 const dealsCol = collection(db, 'deals');
 
@@ -21,6 +21,53 @@ export async function seedIfEmpty() {
   const batch = writeBatch(db);
   defaultDeals().forEach((d) => batch.set(doc(dealsCol, d.txnId), d));
   await batch.commit();
+}
+
+// Transaction IDs double as the Firestore document ID (see note above), so
+// a new one has to be checked for collisions before use. Collisions are
+// astronomically unlikely with a 4-digit suffix, but the check costs one
+// cheap read and prevents a silent overwrite in the worst case.
+async function generateUniqueTxnId() {
+  const year = new Date().getFullYear();
+  for (let i = 0; i < 25; i++) {
+    const candidate = `CP-${year}-${Math.floor(1000 + Math.random() * 9000)}`;
+    const snap = await getDoc(doc(dealsCol, candidate));
+    if (!snap.exists()) return candidate;
+  }
+  throw new Error('Could not generate a unique transaction ID — try again.');
+}
+
+// Creates a brand new transaction. The first milestone ("Offer accepted")
+// starts marked done, since by definition a transaction doesn't exist
+// until an offer has been accepted; every other milestone starts pending
+// with no date until the agent marks it complete.
+export async function createDeal(fields) {
+  const txnId = await generateUniqueTxnId();
+  const milestones = MS_TEMPLATE.map((t, i) => ({
+    label: t.label,
+    desc: t.desc,
+    done: i === 0,
+    date: i === 0 ? fields.offerDate : 'Not yet scheduled',
+  }));
+  const deal = {
+    txnId,
+    addr: fields.addr,
+    city: fields.city,
+    zip: fields.zip,
+    side: fields.side,
+    client: fields.client,
+    price: fields.price,
+    offerDate: fields.offerDate,
+    close: fields.close,
+    days: fields.days,
+    vLast: fields.vLast,
+    vZip: fields.zip,
+    notes: '',
+    milestones,
+    documents: {},
+  };
+  await setDoc(doc(dealsCol, txnId), deal);
+  return txnId;
 }
 
 // Agent: live list of every deal. Requires auth (see firestore.rules).
@@ -55,8 +102,9 @@ export async function markMilestoneDone(txnId, index) {
   const ref = doc(dealsCol, txnId);
   const snap = await getDoc(ref);
   const d = snap.data();
+  const today = new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
   const milestones = d.milestones.map((m, i) =>
-    i === index ? { ...m, done: true, date: m.date.replace('Expected ', '') } : m
+    i === index ? { ...m, done: true, date: today } : m
   );
   await updateDoc(ref, { milestones });
 }

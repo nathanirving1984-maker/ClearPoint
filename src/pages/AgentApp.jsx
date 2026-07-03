@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import { seedIfEmpty, subscribeAllDeals } from '../data/dealsApi';
 import AgentDeal from './AgentDeal';
 import AgentMessages from './AgentMessages';
+import NewTransaction from './NewTransaction';
 import Logo from '../components/Logo';
 
 function pct(d) { return Math.round(d.milestones.filter((m) => m.done).length / d.milestones.length * 100); }
@@ -17,6 +18,7 @@ export default function AgentApp() {
   const loc = useLocation();
   const inDeal = loc.pathname.includes('/deal/');
   const inMessages = loc.pathname.includes('/messages');
+  const inNew = loc.pathname.includes('/new');
 
   useEffect(() => {
     seedIfEmpty().then(() => setLoaded(true));
@@ -40,7 +42,7 @@ export default function AgentApp() {
       </div>
       <div className="sidebar">
         <div className="nav-sec">My workspace</div>
-        <Link to="/agent" className={`nav-item ${!inDeal && !inMessages ? 'active' : ''}`}>
+        <Link to="/agent" className={`nav-item ${!inDeal && !inMessages && !inNew ? 'active' : ''}`}>
           <div className="nav-left">All transactions</div><span className="badge-c">{deals.length}</span>
         </Link>
         <Link to="/agent/messages" className={`nav-item ${inMessages ? 'active' : ''}`}>
@@ -50,6 +52,7 @@ export default function AgentApp() {
       <div className="main">
         <Routes>
           <Route index element={<TransactionList deals={deals} />} />
+          <Route path="new" element={<NewTransaction />} />
           <Route path="messages" element={<AgentMessages deals={deals} />} />
           <Route path="deal/:txnId/*" element={<AgentDeal />} />
         </Routes>
@@ -64,7 +67,10 @@ function TransactionList({ deals }) {
 
   return (
     <>
-      <div><div style={{ fontFamily: 'var(--font-display)', fontSize: 20, fontWeight: 600, color: 'var(--blue-dark)' }}>Good day, Nathan</div></div>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8 }}>
+        <div><div style={{ fontFamily: 'var(--font-display)', fontSize: 20, fontWeight: 600, color: 'var(--blue-dark)' }}>Good day, Nathan</div></div>
+        <Link to="new" className="si-btn" style={{ width: 'auto', padding: '9px 16px', textDecoration: 'none', display: 'inline-block' }}>+ New transaction</Link>
+      </div>
       <div className="grid-4">
         <div className="stat-card"><div className="stat-num">{deals.length}</div><div className="stat-label">Active transactions</div></div>
         <div className="stat-card"><div className="stat-num">{deals.filter((d) => d.side === 'buyer').length}</div><div className="stat-label">Buyer side</div></div>
