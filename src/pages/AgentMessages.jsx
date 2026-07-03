@@ -40,7 +40,7 @@ function InboxRow({ deal }) {
 export default function AgentMessages({ deals }) {
   return (
     <>
-      <div><div style={{ fontSize: 15, fontWeight: 500 }}>Messages</div><div style={{ fontSize: 12, color: 'var(--text-secondary)' }}>All client conversations in one place.</div></div>
+      <div><div style={{ fontFamily: 'var(--font-display)', fontSize: 20, fontWeight: 600, color: 'var(--blue-dark)' }}>Messages</div><div style={{ fontSize: 12, color: 'var(--text-secondary)' }}>All client conversations in one place.</div></div>
       <div className="card" style={{ padding: '0.5rem 1.25rem' }}>
         {deals.map((d) => <InboxRow deal={d} key={d.txnId} />)}
       </div>

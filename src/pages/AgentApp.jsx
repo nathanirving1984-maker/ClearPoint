@@ -64,7 +64,7 @@ function TransactionList({ deals }) {
 
   return (
     <>
-      <div><div style={{ fontSize: 15, fontWeight: 500 }}>Good day, Nathan</div></div>
+      <div><div style={{ fontFamily: 'var(--font-display)', fontSize: 20, fontWeight: 600, color: 'var(--blue-dark)' }}>Good day, Nathan</div></div>
       <div className="grid-4">
         <div className="stat-card"><div className="stat-num">{deals.length}</div><div className="stat-label">Active transactions</div></div>
         <div className="stat-card"><div className="stat-num">{deals.filter((d) => d.side === 'buyer').length}</div><div className="stat-label">Buyer side</div></div>

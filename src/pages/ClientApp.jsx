@@ -78,7 +78,7 @@ export default function ClientApp() {
               <div className="card-title">Where things stand <span style={{ fontSize: 10, color: 'var(--text-tertiary)', fontWeight: 400 }}>(<span className="sync-dot" />updates live from your agent)</span></div>
               <div className="prog-bg"><div className="prog-fill" style={{ width: `${pct(deal)}%` }} /></div>
               <div className="prog-label">{deal.milestones.filter((m) => m.done).length} of {deal.milestones.length} steps complete</div>
-              {deal.milestones.slice(0, 5).map((m, i) => {
+              {deal.milestones.map((m, i) => {
                 const state = m.done ? 'done' : i === idx ? 'now' : 'next';
                 return (
                   <div className="step" key={i}>
