@@ -2,7 +2,8 @@ import { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { subscribeDeal, markMilestoneDone, saveNotes, subscribeMessages, sendMessage } from '../data/dealsApi';
 import { uploadDocument } from '../data/filesApi';
-import { DOC_TEMPLATE, contactsFor } from '../data/defaultDeals';
+import { DOC_TEMPLATE, agentContact, contactColor, initials } from '../data/defaultDeals';
+import EditTransactionForm from './EditTransactionForm';
 
 function pct(d) { return Math.round(d.milestones.filter((m) => m.done).length / d.milestones.length * 100); }
 function activeIdx(d) { const i = d.milestones.findIndex((m) => !m.done); return i === -1 ? d.milestones.length - 1 : i; }
@@ -45,7 +46,7 @@ export default function AgentDeal() {
     <>
       <Link to="/agent" className="back-btn">← All transactions</Link>
       <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-        {['overview', 'milestones', 'parties', 'documents', 'comms', 'notes'].map((t) => (
+        {['overview', 'milestones', 'parties', 'documents', 'comms', 'notes', 'edit'].map((t) => (
           <button key={t} className={`filter-btn ${tab === t ? 'active' : ''}`} onClick={() => setTab(t)}>{t}</button>
         ))}
       </div>
@@ -91,15 +92,23 @@ export default function AgentDeal() {
       {tab === 'parties' && (
         <div className="card">
           <div className="card-title">Transaction team</div>
-          {contactsFor(deal.side).map((c) => (
-            <div className="contact-row" key={c.name}>
-              <div className="c-left">
-                <div className="avatar" style={{ background: c.bg, color: c.fg }}>{c.init}</div>
-                <div><div className="c-name">{c.name}</div><div className="c-role">{c.role}</div></div>
+          {[agentContact(deal.side), ...(deal.contacts || [])].map((c, i) => {
+            const color = c.isAgent ? { bg: c.bg, fg: c.fg } : contactColor(i - 1);
+            return (
+              <div className="contact-row" key={i}>
+                <div className="c-left">
+                  <div className="avatar" style={{ background: color.bg, color: color.fg }}>{initials(c.name)}</div>
+                  <div><div className="c-name">{c.name}</div><div className="c-role">{c.role}</div></div>
+                </div>
+                <button className="c-btn">{c.phone}</button>
               </div>
-              <button className="c-btn">{c.phone}</button>
+            );
+          })}
+          {(!deal.contacts || deal.contacts.length === 0) && (
+            <div style={{ fontSize: 12, color: 'var(--text-tertiary)', marginTop: 8 }}>
+              No other parties added yet. Add the other side's agent, lender, or title company from the <span style={{ color: 'var(--blue)', cursor: 'pointer' }} onClick={() => setTab('edit')}>edit details tab →</span>
             </div>
-          ))}
+          )}
         </div>
       )}
 
@@ -156,6 +165,10 @@ export default function AgentDeal() {
           <textarea className="note-area" value={notes} onChange={(e) => setNotes(e.target.value)} />
           <button className="save-btn" onClick={handleSaveNotes}>Save notes</button>
         </div>
+      )}
+
+      {tab === 'edit' && (
+        <EditTransactionForm deal={deal} txnId={txnId} onSaved={() => { flash('Transaction details saved — your client sees this too'); setTab('overview'); }} />
       )}
 
       {toast && <div className="toast">{toast}</div>}

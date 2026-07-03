@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { subscribeDeal, subscribeMessages, sendMessage } from '../data/dealsApi';
-import { DOC_TEMPLATE, contactsFor } from '../data/defaultDeals';
+import { DOC_TEMPLATE, agentContact, contactColor, initials } from '../data/defaultDeals';
 import Logo from '../components/Logo';
 
 function pct(d) { return Math.round(d.milestones.filter((m) => m.done).length / d.milestones.length * 100); }
@@ -133,18 +133,21 @@ export default function ClientApp() {
         {tab === 'contacts' && (
           <div className="card">
             <div className="card-title">Your transaction team</div>
-            {contactsFor(deal.side).map((c) => (
-              <div className="contact-row" key={c.name}>
-                <div className="c-left">
-                  <div className="avatar" style={{ background: c.bg, color: c.fg }}>{c.init}</div>
-                  <div><div className="c-name">{c.name}</div><div className="c-role">{c.role}</div></div>
+            {[agentContact(deal.side), ...(deal.contacts || [])].map((c, i) => {
+              const color = c.isAgent ? { bg: c.bg, fg: c.fg } : contactColor(i - 1);
+              return (
+                <div className="contact-row" key={i}>
+                  <div className="c-left">
+                    <div className="avatar" style={{ background: color.bg, color: color.fg }}>{initials(c.name)}</div>
+                    <div><div className="c-name">{c.name}</div><div className="c-role">{c.role}</div></div>
+                  </div>
+                  <div style={{ display: 'flex', gap: 6 }}>
+                    {c.isAgent && <button className="c-btn" onClick={() => setTab('chat')}>Message</button>}
+                    <button className="c-btn">{c.phone}</button>
+                  </div>
                 </div>
-                <div style={{ display: 'flex', gap: 6 }}>
-                  {c.isAgent && <button className="c-btn" onClick={() => setTab('chat')}>Message</button>}
-                  <button className="c-btn">{c.phone}</button>
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
 

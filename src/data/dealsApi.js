@@ -65,9 +65,14 @@ export async function createDeal(fields) {
     notes: '',
     milestones,
     documents: {},
+    contacts: [],
   };
   await setDoc(doc(dealsCol, txnId), deal);
   return txnId;
+}
+
+export async function updateDealDetails(txnId, fields) {
+  await updateDoc(doc(dealsCol, txnId), fields);
 }
 
 // Agent: live list of every deal. Requires auth (see firestore.rules).
