@@ -1,11 +1,12 @@
 import { useNavigate } from 'react-router-dom';
+import Logo from '../components/Logo';
 
 export default function RolePicker() {
   const nav = useNavigate();
   return (
     <div className="center-wrap">
       <div className="card-box" style={{ width: 420 }}>
-        <div className="logo-row"><div className="logo-dot" /><span className="logo-text">ClearPoint</span></div>
+        <div className="logo-row"><Logo size={32} /><span className="logo-text">ClearPoint</span></div>
         <div className="logo-sub">Real estate transactions, made clear.</div>
         <div className="role-picker">
           <button className="role-btn" onClick={() => nav('/agent/signin')}>

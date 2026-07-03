@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import { seedIfEmpty, subscribeAllDeals } from '../data/dealsApi';
 import AgentDeal from './AgentDeal';
 import AgentMessages from './AgentMessages';
+import Logo from '../components/Logo';
 
 function pct(d) { return Math.round(d.milestones.filter((m) => m.done).length / d.milestones.length * 100); }
 function activeIdx(d) { const i = d.milestones.findIndex((m) => !m.done); return i === -1 ? d.milestones.length - 1 : i; }
@@ -31,7 +32,7 @@ export default function AgentApp() {
   return (
     <div className="app" style={{ height: '100vh' }}>
       <div className="topbar">
-        <div className="t-logo"><div className="logo-dot" />ClearPoint <span className="admin-badge">Agent admin</span></div>
+        <div className="t-logo"><Logo size={22} />ClearPoint <span className="admin-badge">Agent admin</span></div>
         <div className="t-right">
           <span style={{ fontSize: 12, fontWeight: 500 }}>Nathan R.</span>
           <button className="exit-btn" onClick={async () => { await signOutAgent(); nav('/'); }}>Sign out</button>

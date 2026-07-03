@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { subscribeDeal, subscribeMessages, sendMessage } from '../data/dealsApi';
 import { DOC_TEMPLATE, contactsFor } from '../data/defaultDeals';
+import Logo from '../components/Logo';
 
 function pct(d) { return Math.round(d.milestones.filter((m) => m.done).length / d.milestones.length * 100); }
 function activeIdx(d) { const i = d.milestones.findIndex((m) => !m.done); return i === -1 ? d.milestones.length - 1 : i; }
@@ -35,7 +36,7 @@ export default function ClientApp() {
   return (
     <div className="app" style={{ height: '100vh' }}>
       <div className="topbar">
-        <div className="t-logo"><div className="logo-dot" />ClearPoint</div>
+        <div className="t-logo"><Logo size={22} />ClearPoint</div>
         <div className="t-right">
           <span className="txn-chip">{deal.txnId}</span>
           <button className="exit-btn" onClick={() => nav('/')}>Exit</button>

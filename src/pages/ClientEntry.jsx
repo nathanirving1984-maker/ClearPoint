@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { findDealForClient } from '../data/dealsApi';
+import Logo from '../components/Logo';
 
 export default function ClientEntry() {
   const [txnId, setTxnId] = useState('CP-2026-4821');
@@ -26,7 +27,7 @@ export default function ClientEntry() {
   return (
     <div className="center-wrap">
       <form className="card-box" onSubmit={handleSubmit}>
-        <div className="logo-row"><div className="logo-dot" /><span className="logo-text">ClearPoint</span></div>
+        <div className="logo-row"><Logo size={32} /><span className="logo-text">ClearPoint</span></div>
         <div className="logo-sub">Enter your transaction ID to get started</div>
         <div className="field-group">
           <label className="field-label">Transaction ID</label>
