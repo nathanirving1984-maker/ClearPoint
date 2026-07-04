@@ -11,7 +11,7 @@ function daysUntil(iso) {
   return Math.max(0, Math.round((new Date(iso + 'T00:00:00') - new Date()) / 86400000));
 }
 
-const EMPTY = { addr: '', city: '', zip: '', side: 'buyer', client: '', vLast: '', price: '', offerDate: '', close: '' };
+const EMPTY = { addr: '', city: '', zip: '', side: 'buyer', client: '', vLast: '', clientEmail: '', price: '', offerDate: '', close: '' };
 
 export default function NewTransaction() {
   const nav = useNavigate();
@@ -37,6 +37,7 @@ export default function NewTransaction() {
         side: form.side,
         client: form.client.trim(),
         vLast: form.vLast.trim(),
+        clientEmail: form.clientEmail.trim(),
         price: form.price ? `$${Number(form.price).toLocaleString()}` : 'TBD',
         offerDate: fmtDate(form.offerDate),
         close: fmtDate(form.close),
@@ -87,6 +88,12 @@ export default function NewTransaction() {
           <label className="field-label">Client last name (for their login)</label>
           <input className="si-input" value={form.vLast} onChange={set('vLast')} placeholder="Torres" />
           <div className="field-hint">Clients sign in with the transaction ID plus this last name, or the property zip code above.</div>
+        </div>
+
+        <div>
+          <label className="field-label">Client email (optional, for notifications)</label>
+          <input className="si-input" type="email" value={form.clientEmail} onChange={set('clientEmail')} placeholder="jake.torres@example.com" />
+          <div className="field-hint">If you add this, your client gets an automatic email whenever a milestone updates, you message them, or a document goes up. You can add it later from Edit details if you don't have it yet.</div>
         </div>
 
         <div>

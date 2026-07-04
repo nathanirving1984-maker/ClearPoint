@@ -5,7 +5,7 @@ import { contactColor, initials } from '../data/defaultDeals';
 export default function EditTransactionForm({ deal, txnId, onSaved }) {
   const [form, setForm] = useState({
     addr: deal.addr, city: deal.city, zip: deal.zip, side: deal.side,
-    client: deal.client, vLast: deal.vLast, price: deal.price,
+    client: deal.client, vLast: deal.vLast, clientEmail: deal.clientEmail || '', price: deal.price,
     offerDate: deal.offerDate, close: deal.close,
   });
   const [contacts, setContacts] = useState(deal.contacts || []);
@@ -77,6 +77,12 @@ export default function EditTransactionForm({ deal, txnId, onSaved }) {
       <div>
         <label className="field-label">Client last name (for their login)</label>
         <input className="si-input" value={form.vLast} onChange={set('vLast')} />
+      </div>
+
+      <div>
+        <label className="field-label">Client email (for notifications)</label>
+        <input className="si-input" type="email" value={form.clientEmail} onChange={set('clientEmail')} placeholder="jake.torres@example.com" />
+        <div className="field-hint">Milestone updates, your messages, and new documents email here automatically once this is filled in.</div>
       </div>
 
       <div>

@@ -28,12 +28,12 @@ export default function AgentDeal() {
 
   async function markDone(i) { await markMilestoneDone(txnId, i); flash('Milestone marked complete — your client sees this update automatically'); }
   async function handleSaveNotes() { await saveNotes(txnId, notes); flash('Notes saved'); }
-  async function handleSend() { if (!msgText.trim()) return; await sendMessage(txnId, 'agent', msgText.trim()); setMsgText(''); }
+  async function handleSend() { if (!msgText.trim()) return; await sendMessage(txnId, 'agent', msgText.trim(), deal); setMsgText(''); }
   async function handleUpload(i, file) {
     if (!file) return;
     setUploading(i);
     try {
-      await uploadDocument(txnId, i, file);
+      await uploadDocument(txnId, i, file, deal);
       flash('Document uploaded — your client can view it now');
     } catch (e) {
       flash('Upload failed: ' + e.message);

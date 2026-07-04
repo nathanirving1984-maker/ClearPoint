@@ -4,6 +4,8 @@ import {
 } from 'firebase/firestore';
 import { db } from '../firebase';
 import { defaultDeals, MS_TEMPLATE } from './defaultDeals';
+import { notifyClient } from './notificationsApi';
+import { SITE_URL } from '../constants';
 
 const dealsCol = collection(db, 'deals');
 
@@ -62,6 +64,7 @@ export async function createDeal(fields) {
     days: fields.days,
     vLast: fields.vLast,
     vZip: fields.zip,
+    clientEmail: fields.clientEmail || '',
     notes: '',
     milestones,
     documents: {},
@@ -112,6 +115,11 @@ export async function markMilestoneDone(txnId, index) {
     i === index ? { ...m, done: true, date: today } : m
   );
   await updateDoc(ref, { milestones });
+  await notifyClient(d, `Update on your transaction at ${d.addr}`,
+    `<p>Hi ${d.client.split(' ')[0]},</p>
+     <p><strong>${d.milestones[index].label}</strong> was just marked complete on your transaction at ${d.addr}.</p>
+     <p><a href="${SITE_URL}/client">View your transaction →</a></p>
+     <p>— Nathan</p>`);
 }
 
 export async function saveNotes(txnId, notes) {
@@ -126,8 +134,18 @@ export function subscribeMessages(txnId, callback) {
   return onSnapshot(q, (snap) => callback(snap.docs.map((d) => ({ id: d.id, ...d.data() }))));
 }
 
-export async function sendMessage(txnId, from, text) {
+// `deal` is optional and only used for the agent → client notification
+// email; passing it in avoids an extra Firestore read since the caller
+// (AgentDeal.jsx) already has the deal in state.
+export async function sendMessage(txnId, from, text, deal) {
   await addDoc(collection(db, 'deals', txnId, 'messages'), {
     from, text, createdAt: serverTimestamp(),
   });
+  if (from === 'agent' && deal) {
+    await notifyClient(deal, 'New message from your agent',
+      `<p>Hi ${deal.client.split(' ')[0]},</p>
+       <p>You have a new message from Nathan about ${deal.addr}:</p>
+       <p style="padding:12px;background:#F7F3EC;border-radius:8px;">${text}</p>
+       <p><a href="${SITE_URL}/client">Reply on ClearPoint →</a></p>`);
+  }
 }

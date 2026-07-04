@@ -29,5 +29,13 @@ service cloud.firestore {
         allow update, delete: if false;
       }
     }
+
+    // Watched by the Trigger Email extension. Every write here comes from
+    // an authenticated agent action (marking a milestone, sending a
+    // message, uploading a document) — clients never write here directly.
+    match /mail/{mailId} {
+      allow create: if request.auth != null;
+      allow read, update, delete: if false;
+    }
   }
 }
