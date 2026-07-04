@@ -3,7 +3,7 @@ import {
   onSnapshot, query, orderBy, addDoc, serverTimestamp, writeBatch,
 } from 'firebase/firestore';
 import { db } from '../firebase';
-import { defaultDeals, MS_TEMPLATE } from './defaultDeals';
+import { defaultDeals } from './defaultDeals';
 import { notifyClient } from './notificationsApi';
 import { SITE_URL } from '../constants';
 
@@ -39,18 +39,11 @@ async function generateUniqueTxnId() {
   throw new Error('Could not generate a unique transaction ID — try again.');
 }
 
-// Creates a brand new transaction. The first milestone ("Offer accepted")
-// starts marked done, since by definition a transaction doesn't exist
-// until an offer has been accepted; every other milestone starts pending
-// with no date until the agent marks it complete.
+// Creates a brand new transaction using whatever milestone list the agent
+// built in the New Transaction form — not every deal follows the same
+// steps, so there's no fixed template baked in here.
 export async function createDeal(fields) {
   const txnId = await generateUniqueTxnId();
-  const milestones = MS_TEMPLATE.map((t, i) => ({
-    label: t.label,
-    desc: t.desc,
-    done: i === 0,
-    date: i === 0 ? fields.offerDate : 'Not yet scheduled',
-  }));
   const deal = {
     txnId,
     addr: fields.addr,
@@ -66,8 +59,8 @@ export async function createDeal(fields) {
     vZip: fields.zip,
     clientEmail: fields.clientEmail || '',
     notes: '',
-    milestones,
-    documents: {},
+    milestones: fields.milestones,
+    documents: [],
     contacts: [],
   };
   await setDoc(doc(dealsCol, txnId), deal);
@@ -76,6 +69,10 @@ export async function createDeal(fields) {
 
 export async function updateDealDetails(txnId, fields) {
   await updateDoc(doc(dealsCol, txnId), fields);
+}
+
+export async function updateMilestones(txnId, milestones) {
+  await updateDoc(doc(dealsCol, txnId), { milestones });
 }
 
 // Agent: live list of every deal. Requires auth (see firestore.rules).

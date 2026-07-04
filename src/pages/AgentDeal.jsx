@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { subscribeDeal, markMilestoneDone, saveNotes, subscribeMessages, sendMessage } from '../data/dealsApi';
+import { subscribeDeal, markMilestoneDone, updateMilestones, saveNotes, subscribeMessages, sendMessage } from '../data/dealsApi';
 import { uploadDocument } from '../data/filesApi';
-import { DOC_TEMPLATE, agentContact, contactColor, initials } from '../data/defaultDeals';
+import { agentContact, contactColor, initials } from '../data/defaultDeals';
 import EditTransactionForm from './EditTransactionForm';
+import MilestoneEditor from '../components/MilestoneEditor';
 
 function pct(d) { return Math.round(d.milestones.filter((m) => m.done).length / d.milestones.length * 100); }
 function activeIdx(d) { const i = d.milestones.findIndex((m) => !m.done); return i === -1 ? d.milestones.length - 1 : i; }
@@ -16,7 +17,10 @@ export default function AgentDeal() {
   const [msgs, setMsgs] = useState([]);
   const [msgText, setMsgText] = useState('');
   const [toast, setToast] = useState('');
-  const [uploading, setUploading] = useState(null);
+  const [uploading, setUploading] = useState(false);
+  const [editingMilestones, setEditingMilestones] = useState(false);
+  const [msDraft, setMsDraft] = useState([]);
+  const [newDocName, setNewDocName] = useState('');
 
   useEffect(() => subscribeDeal(txnId, (d) => { setDeal(d); if (d) setNotes(d.notes); }), [txnId]);
   useEffect(() => subscribeMessages(txnId, setMsgs), [txnId]);
@@ -29,16 +33,24 @@ export default function AgentDeal() {
   async function markDone(i) { await markMilestoneDone(txnId, i); flash('Milestone marked complete — your client sees this update automatically'); }
   async function handleSaveNotes() { await saveNotes(txnId, notes); flash('Notes saved'); }
   async function handleSend() { if (!msgText.trim()) return; await sendMessage(txnId, 'agent', msgText.trim(), deal); setMsgText(''); }
-  async function handleUpload(i, file) {
+  function startEditingMilestones() { setMsDraft(deal.milestones); setEditingMilestones(true); }
+  async function saveMilestones() {
+    await updateMilestones(txnId, msDraft);
+    setEditingMilestones(false);
+    flash('Milestones updated — your client sees this update automatically');
+  }
+  async function handleUpload(file) {
     if (!file) return;
-    setUploading(i);
+    const label = newDocName.trim() || file.name;
+    setUploading(true);
     try {
-      await uploadDocument(txnId, i, file, deal);
+      await uploadDocument(txnId, label, file, deal);
+      setNewDocName('');
       flash('Document uploaded — your client can view it now');
     } catch (e) {
       flash('Upload failed: ' + e.message);
     } finally {
-      setUploading(null);
+      setUploading(false);
     }
   }
 
@@ -69,13 +81,16 @@ export default function AgentDeal() {
         </>
       )}
 
-      {tab === 'milestones' && (
+      {tab === 'milestones' && !editingMilestones && (
         <div className="card">
-          <div className="card-title">Transaction milestones <span style={{ fontSize: 10, color: 'var(--text-tertiary)', fontWeight: 400 }}>(<span className="sync-dot" />synced live with your client)</span></div>
+          <div className="card-header">
+            <div className="card-title">Transaction milestones <span style={{ fontSize: 10, color: 'var(--text-tertiary)', fontWeight: 400, textTransform: 'none', letterSpacing: 0 }}>(<span className="sync-dot" />synced live with your client)</span></div>
+            <button className="c-btn" onClick={startEditingMilestones}>Edit milestones</button>
+          </div>
           {deal.milestones.map((m, i) => {
             const state = m.done ? 'done' : i === idx ? 'now' : 'next';
             return (
-              <div className="step" key={i}>
+              <div className="step" key={m.id || i}>
                 <div className={`step-icon s-${state}`}>{m.done ? '✓' : i === idx ? '●' : '○'}</div>
                 <div style={{ flex: 1 }}>
                   <div className={`step-name ${state}`}>{m.label}</div>
@@ -86,6 +101,17 @@ export default function AgentDeal() {
               </div>
             );
           })}
+        </div>
+      )}
+
+      {tab === 'milestones' && editingMilestones && (
+        <div className="card">
+          <div className="card-header">
+            <div className="card-title">Edit milestones</div>
+            <button className="c-btn" onClick={() => setEditingMilestones(false)}>Cancel</button>
+          </div>
+          <MilestoneEditor milestones={msDraft} onChange={setMsDraft} />
+          <button className="si-btn" style={{ marginTop: 14 }} onClick={saveMilestones}>Save milestones</button>
         </div>
       )}
 
@@ -115,29 +141,25 @@ export default function AgentDeal() {
       {tab === 'documents' && (
         <div className="card">
           <div className="card-title">Documents</div>
-          {DOC_TEMPLATE.map((t, i) => {
-            const m = deal.milestones[i];
-            const file = deal.documents && deal.documents[i];
-            const pill = m.done ? <span className="pill pill-green">Complete</span> : i === idx ? <span className="pill pill-blue">In progress</span> : <span className="pill pill-gray">Pending</span>;
-            return (
-              <div className="doc-row" key={t.name}>
-                <div>
-                  <div className="doc-name">{t.name}</div>
-                  <div className="doc-meta">
-                    {t.meta} · {m.date}
-                    {file && <> · <a href={file.url} target="_blank" rel="noreferrer" style={{ color: 'var(--blue)' }}>{file.name}</a></>}
-                  </div>
-                </div>
-                <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                  {pill}
-                  <label className="c-btn" style={{ cursor: 'pointer' }}>
-                    {uploading === i ? 'Uploading…' : file ? 'Replace' : 'Upload'}
-                    <input type="file" style={{ display: 'none' }} disabled={uploading === i} onChange={(e) => handleUpload(i, e.target.files[0])} />
-                  </label>
-                </div>
+          {(deal.documents || []).length === 0 && (
+            <div style={{ fontSize: 12, color: 'var(--text-tertiary)', marginBottom: 10 }}>No documents uploaded yet.</div>
+          )}
+          {(deal.documents || []).map((f) => (
+            <div className="doc-row" key={f.id}>
+              <div>
+                <div className="doc-name">{f.name}</div>
+                <div className="doc-meta">{f.fileName} · uploaded {new Date(f.uploadedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</div>
               </div>
-            );
-          })}
+              <a className="c-btn" href={f.url} target="_blank" rel="noreferrer">View</a>
+            </div>
+          ))}
+          <div style={{ display: 'flex', gap: 8, marginTop: 12, flexWrap: 'wrap' }}>
+            <input className="si-input" style={{ flex: '1 1 200px' }} placeholder="What is this document? e.g. Inspection report" value={newDocName} onChange={(e) => setNewDocName(e.target.value)} />
+            <label className="si-btn secondary" style={{ width: 'auto', padding: '9px 14px', cursor: 'pointer', display: 'inline-block' }}>
+              {uploading ? 'Uploading…' : 'Choose file & upload'}
+              <input type="file" style={{ display: 'none' }} disabled={uploading} onChange={(e) => handleUpload(e.target.files[0])} />
+            </label>
+          </div>
         </div>
       )}
 

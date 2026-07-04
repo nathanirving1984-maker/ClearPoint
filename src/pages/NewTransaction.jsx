@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { createDeal } from '../data/dealsApi';
+import { MS_TEMPLATE } from '../data/defaultDeals';
+import MilestoneEditor, { newMilestone } from '../components/MilestoneEditor';
 
 function fmtDate(iso) {
   if (!iso) return '';
@@ -16,6 +18,7 @@ const EMPTY = { addr: '', city: '', zip: '', side: 'buyer', client: '', vLast: '
 export default function NewTransaction() {
   const nav = useNavigate();
   const [form, setForm] = useState(EMPTY);
+  const [milestones, setMilestones] = useState(() => MS_TEMPLATE.map((t) => newMilestone(t.label, t.desc)));
   const [saving, setSaving] = useState(false);
   const [err, setErr] = useState('');
 
@@ -42,6 +45,7 @@ export default function NewTransaction() {
         offerDate: fmtDate(form.offerDate),
         close: fmtDate(form.close),
         days: daysUntil(form.close),
+        milestones,
       });
       nav(`/agent/deal/${txnId}`);
     } catch (e2) {
@@ -54,7 +58,7 @@ export default function NewTransaction() {
     <>
       <Link to="/agent" className="back-btn">← All transactions</Link>
       <div style={{ fontFamily: 'var(--font-display)', fontSize: 20, fontWeight: 600, color: 'var(--blue-dark)' }}>New transaction</div>
-      <form className="card" onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 14, maxWidth: 480 }}>
+      <form className="card" onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 14, maxWidth: 560 }}>
         <div>
           <label className="field-label">Which side are you representing?</label>
           <div className="verify-toggle">
@@ -110,6 +114,12 @@ export default function NewTransaction() {
             <label className="field-label">Target close date</label>
             <input className="si-input" type="date" value={form.close} onChange={set('close')} />
           </div>
+        </div>
+
+        <div style={{ borderTop: '0.5px solid var(--border)', paddingTop: 14 }}>
+          <label className="field-label">Milestones</label>
+          <div className="field-hint" style={{ marginBottom: 10 }}>Started from a typical checklist — reorder, rename, remove, or add steps so it matches this specific deal. You can keep editing this after the transaction is created too.</div>
+          <MilestoneEditor milestones={milestones} onChange={setMilestones} />
         </div>
 
         <button className="si-btn" type="submit" disabled={saving}>{saving ? 'Creating…' : 'Create transaction'}</button>

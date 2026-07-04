@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { subscribeDeal, subscribeMessages, sendMessage } from '../data/dealsApi';
-import { DOC_TEMPLATE, agentContact, contactColor, initials } from '../data/defaultDeals';
+import { agentContact, contactColor, initials } from '../data/defaultDeals';
 import Logo from '../components/Logo';
 
 function pct(d) { return Math.round(d.milestones.filter((m) => m.done).length / d.milestones.length * 100); }
@@ -109,24 +109,18 @@ export default function ClientApp() {
         {tab === 'documents' && (
           <div className="card">
             <div className="card-title">Your documents</div>
-            {DOC_TEMPLATE.map((t, i) => {
-              const m = deal.milestones[i];
-              const file = deal.documents && deal.documents[i];
-              const right = file
-                ? <><span className="pill pill-green">Uploaded</span><a className="c-btn" href={file.url} target="_blank" rel="noreferrer">View</a></>
-                : m.done ? <span className="pill pill-green">Signed</span>
-                : i === idx ? <span className="pill pill-blue">Review needed</span>
-                : <span className="pill pill-gray">Pending</span>;
-              return (
-                <div className="doc-row" key={t.name}>
-                  <div>
-                    <div className="doc-name">{t.name}</div>
-                    <div className="doc-meta">{file ? file.name : t.meta} · {m.date}</div>
-                  </div>
-                  <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>{right}</div>
+            {(deal.documents || []).length === 0 && (
+              <div style={{ fontSize: 12, color: 'var(--text-tertiary)' }}>Nothing uploaded yet — your agent will post documents here as they're ready.</div>
+            )}
+            {(deal.documents || []).map((f) => (
+              <div className="doc-row" key={f.id}>
+                <div>
+                  <div className="doc-name">{f.name}</div>
+                  <div className="doc-meta">Uploaded {new Date(f.uploadedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</div>
                 </div>
-              );
-            })}
+                <a className="c-btn" href={f.url} target="_blank" rel="noreferrer">View</a>
+              </div>
+            ))}
           </div>
         )}
 
