@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { subscribeDeal, markMilestoneDone, updateMilestones, saveNotes, subscribeMessages, sendMessage } from '../data/dealsApi';
-import { uploadDocument } from '../data/filesApi';
+import { uploadDocument, removeDocument } from '../data/filesApi';
 import { agentContact, contactColor, initials, docsArray } from '../data/defaultDeals';
 import EditTransactionForm from './EditTransactionForm';
 import MilestoneEditor from '../components/MilestoneEditor';
@@ -51,6 +51,16 @@ export default function AgentDeal() {
       flash('Upload failed: ' + e.message);
     } finally {
       setUploading(false);
+    }
+  }
+  async function handleRemoveDocument(entry) {
+    const confirmed = window.confirm('Are you sure you would like to remove this document from the transaction?');
+    if (!confirmed) return;
+    try {
+      await removeDocument(txnId, entry);
+      flash('Document removed');
+    } catch (e) {
+      flash('Could not remove document: ' + e.message);
     }
   }
 
@@ -153,7 +163,10 @@ export default function AgentDeal() {
                   uploaded {f.uploadedAt ? new Date(f.uploadedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'previously'}
                 </div>
               </div>
-              <a className="c-btn" href={f.url} target="_blank" rel="noreferrer">View</a>
+              <div style={{ display: 'flex', gap: 8 }}>
+                <a className="c-btn" href={f.url} target="_blank" rel="noreferrer">View</a>
+                <button className="c-btn" onClick={() => handleRemoveDocument(f)}>Remove</button>
+              </div>
             </div>
           ))}
           <div style={{ display: 'flex', gap: 8, marginTop: 12, flexWrap: 'wrap' }}>

@@ -1,5 +1,5 @@
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { doc, updateDoc, arrayUnion } from 'firebase/firestore';
+import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
+import { doc, updateDoc, arrayUnion, getDoc, deleteField } from 'firebase/firestore';
 import { storage, db } from '../firebase';
 import { notifyClient } from './notificationsApi';
 import { SITE_URL } from '../constants';
@@ -29,4 +29,30 @@ export async function uploadDocument(txnId, docName, file, deal) {
        <p><a href="${SITE_URL}/client">View documents →</a></p>`);
   }
   return entry;
+}
+
+// Removes a document from the transaction and deletes the underlying file
+// in Storage. Handles both the current array format and the older
+// object-keyed format some existing deals may still have, so this works
+// regardless of when a given document was originally uploaded.
+export async function removeDocument(txnId, entry) {
+  try {
+    await deleteObject(ref(storage, entry.url));
+  } catch (e) {
+    // File may already be gone, or the URL couldn't be parsed — either
+    // way, don't let that block removing the reference itself.
+    console.warn('Could not delete underlying file (removing reference anyway):', e.message);
+  }
+
+  const dealRef = doc(db, 'deals', txnId);
+  const snap = await getDoc(dealRef);
+  const data = snap.data();
+
+  if (Array.isArray(data.documents)) {
+    const filtered = data.documents.filter((d) => (entry.id ? d.id !== entry.id : d.url !== entry.url));
+    await updateDoc(dealRef, { documents: filtered });
+  } else if (data.documents && typeof data.documents === 'object') {
+    const key = Object.keys(data.documents).find((k) => data.documents[k].url === entry.url);
+    if (key) await updateDoc(dealRef, { [`documents.${key}`]: deleteField() });
+  }
 }
