@@ -35,6 +35,7 @@ export default function AgentSignIn() {
           <input className="si-input" type="password" value={pw} onChange={(e) => setPw(e.target.value)} required />
         </div>
         <button className="si-btn" type="submit">Sign in</button>
+        <button className="si-btn secondary" type="button" style={{ marginTop: 8 }} onClick={() => nav('/')}>Back</button>
         {err && <div className="err-msg">{err}</div>}
         <div className="si-footer">
           First time? Create your account in the Firebase console under Authentication → Users,
