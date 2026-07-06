@@ -9,10 +9,10 @@ service cloud.firestore {
     // whole security model in two lines: agent = no claim = full access;
     // client = claim = access to that one deal, nothing else.
     function isAgent() {
-      return request.auth != null && request.auth.token.dealId == null;
+      return request.auth != null && request.auth.token.get('dealId', null) == null;
     }
     function isVerifiedClientFor(txnId) {
-      return request.auth != null && request.auth.token.dealId == txnId;
+      return request.auth != null && request.auth.token.get('dealId', null) == txnId;
     }
 
     match /deals/{txnId} {
