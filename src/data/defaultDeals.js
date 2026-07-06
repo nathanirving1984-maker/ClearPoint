@@ -31,6 +31,17 @@ export function initials(name) {
   return (parts[0][0] + (parts[1] ? parts[1][0] : '')).toUpperCase();
 }
 
+// Documents used to be stored as an object keyed by milestone position
+// (from before milestones became custom/reorderable per deal). Any deal
+// touched under that old system still has that shape sitting in Firestore.
+// This normalizes either shape into a plain array so the UI never crashes
+// on old data, regardless of which format a given deal happens to have.
+export function docsArray(documents) {
+  if (Array.isArray(documents)) return documents;
+  if (documents && typeof documents === 'object') return Object.values(documents);
+  return [];
+}
+
 // The agent is always party to their own transactions, so this entry is
 // synthesized rather than stored — one less thing to duplicate or let go
 // stale across every deal. Every other contact (the other side's agent,

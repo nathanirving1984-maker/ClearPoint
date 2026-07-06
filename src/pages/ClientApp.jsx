@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { signOut } from 'firebase/auth';
 import { auth } from '../firebase';
 import { subscribeDeal, subscribeMessages, sendMessage } from '../data/dealsApi';
-import { agentContact, contactColor, initials } from '../data/defaultDeals';
+import { agentContact, contactColor, initials, docsArray } from '../data/defaultDeals';
 import Logo from '../components/Logo';
 
 function pct(d) { return Math.round(d.milestones.filter((m) => m.done).length / d.milestones.length * 100); }
@@ -111,14 +111,14 @@ export default function ClientApp() {
         {tab === 'documents' && (
           <div className="card">
             <div className="card-title">Your documents</div>
-            {(deal.documents || []).length === 0 && (
+            {docsArray(deal.documents).length === 0 && (
               <div style={{ fontSize: 12, color: 'var(--text-tertiary)' }}>Nothing uploaded yet — your agent will post documents here as they're ready.</div>
             )}
-            {(deal.documents || []).map((f) => (
-              <div className="doc-row" key={f.id}>
+            {docsArray(deal.documents).map((f, i) => (
+              <div className="doc-row" key={f.id || f.url || i}>
                 <div>
                   <div className="doc-name">{f.name}</div>
-                  <div className="doc-meta">Uploaded {new Date(f.uploadedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</div>
+                  <div className="doc-meta">Uploaded {f.uploadedAt ? new Date(f.uploadedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'previously'}</div>
                 </div>
                 <a className="c-btn" href={f.url} target="_blank" rel="noreferrer">View</a>
               </div>

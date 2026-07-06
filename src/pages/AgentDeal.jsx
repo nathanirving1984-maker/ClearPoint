@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { subscribeDeal, markMilestoneDone, updateMilestones, saveNotes, subscribeMessages, sendMessage } from '../data/dealsApi';
 import { uploadDocument } from '../data/filesApi';
-import { agentContact, contactColor, initials } from '../data/defaultDeals';
+import { agentContact, contactColor, initials, docsArray } from '../data/defaultDeals';
 import EditTransactionForm from './EditTransactionForm';
 import MilestoneEditor from '../components/MilestoneEditor';
 
@@ -141,14 +141,17 @@ export default function AgentDeal() {
       {tab === 'documents' && (
         <div className="card">
           <div className="card-title">Documents</div>
-          {(deal.documents || []).length === 0 && (
+          {docsArray(deal.documents).length === 0 && (
             <div style={{ fontSize: 12, color: 'var(--text-tertiary)', marginBottom: 10 }}>No documents uploaded yet.</div>
           )}
-          {(deal.documents || []).map((f) => (
-            <div className="doc-row" key={f.id}>
+          {docsArray(deal.documents).map((f, i) => (
+            <div className="doc-row" key={f.id || f.url || i}>
               <div>
                 <div className="doc-name">{f.name}</div>
-                <div className="doc-meta">{f.fileName} · uploaded {new Date(f.uploadedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</div>
+                <div className="doc-meta">
+                  {f.fileName ? `${f.fileName} · ` : ''}
+                  uploaded {f.uploadedAt ? new Date(f.uploadedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'previously'}
+                </div>
               </div>
               <a className="c-btn" href={f.url} target="_blank" rel="noreferrer">View</a>
             </div>
