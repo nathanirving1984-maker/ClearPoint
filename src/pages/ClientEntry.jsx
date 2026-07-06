@@ -4,9 +4,9 @@ import { findDealForClient } from '../data/dealsApi';
 import Logo from '../components/Logo';
 
 export default function ClientEntry() {
-  const [txnId, setTxnId] = useState('CP-2026-4821');
+  const [txnId, setTxnId] = useState('');
   const [mode, setMode] = useState('lastname');
-  const [verify, setVerify] = useState('Torres');
+  const [verify, setVerify] = useState('');
   const [err, setErr] = useState('');
   const [loading, setLoading] = useState(false);
   const nav = useNavigate();
