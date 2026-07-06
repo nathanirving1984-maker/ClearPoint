@@ -100,16 +100,16 @@ export function subscribeDeal(txnId, callback) {
 // exposed either way.
 export async function findDealForClient(txnId, verifyValue, mode) {
   const verify = httpsCallable(functions, 'verifyClientAccess');
-  let token;
   try {
     const result = await verify({ txnId: txnId.trim().toUpperCase(), verifyValue, mode });
-    token = result.data.token;
+    const token = result.data.token;
+    await signInWithCustomToken(auth, token);
+    const snap = await getDoc(doc(dealsCol, txnId.trim().toUpperCase()));
+    return snap.exists() ? snap.data() : null;
   } catch (e) {
+    console.error('Client verification failed:', e.code || e.message, e);
     return null;
   }
-  await signInWithCustomToken(auth, token);
-  const snap = await getDoc(doc(dealsCol, txnId.trim().toUpperCase()));
-  return snap.exists() ? snap.data() : null;
 }
 
 export async function markMilestoneDone(txnId, index) {
