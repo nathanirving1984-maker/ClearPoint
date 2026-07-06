@@ -2,7 +2,9 @@ import {
   collection, doc, getDoc, getDocs, setDoc, updateDoc,
   onSnapshot, query, orderBy, addDoc, serverTimestamp, writeBatch,
 } from 'firebase/firestore';
-import { db } from '../firebase';
+import { httpsCallable } from 'firebase/functions';
+import { signInWithCustomToken } from 'firebase/auth';
+import { db, functions, auth } from '../firebase';
 import { defaultDeals } from './defaultDeals';
 import { notifyClient } from './notificationsApi';
 import { SITE_URL } from '../constants';
@@ -89,18 +91,25 @@ export function subscribeDeal(txnId, callback) {
   });
 }
 
-// Client login: fetch by ID, then verify last name / zip client-side.
-// The Firestore rule only needs to allow `get` on an exact doc ID — it
-// doesn't need to know the verification answer, because a wrong guess
-// just gets rejected here after the fact.
+// Client login: the actual verification happens server-side inside the
+// verifyClientAccess Cloud Function, which never returns deal data — only
+// a Firebase Auth custom token scoped to this one transaction if the last
+// name/zip check out. Signing in with that token is what unlocks
+// firestore.rules to allow reading this specific deal. If verification
+// fails, the function throws and this returns null; no deal data is ever
+// exposed either way.
 export async function findDealForClient(txnId, verifyValue, mode) {
+  const verify = httpsCallable(functions, 'verifyClientAccess');
+  let token;
+  try {
+    const result = await verify({ txnId: txnId.trim().toUpperCase(), verifyValue, mode });
+    token = result.data.token;
+  } catch (e) {
+    return null;
+  }
+  await signInWithCustomToken(auth, token);
   const snap = await getDoc(doc(dealsCol, txnId.trim().toUpperCase()));
-  if (!snap.exists()) return null;
-  const d = snap.data();
-  const ok = mode === 'lastname'
-    ? d.vLast.toLowerCase() === verifyValue.trim().toLowerCase()
-    : d.vZip === verifyValue.trim();
-  return ok ? d : null;
+  return snap.exists() ? snap.data() : null;
 }
 
 export async function markMilestoneDone(txnId, index) {

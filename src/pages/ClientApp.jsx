@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { signOut } from 'firebase/auth';
+import { auth } from '../firebase';
 import { subscribeDeal, subscribeMessages, sendMessage } from '../data/dealsApi';
 import { agentContact, contactColor, initials } from '../data/defaultDeals';
 import Logo from '../components/Logo';
@@ -39,7 +41,7 @@ export default function ClientApp() {
         <div className="t-logo"><Logo size={22} />ClearPoint</div>
         <div className="t-right">
           <span className="txn-chip">{deal.txnId}</span>
-          <button className="exit-btn" onClick={() => nav('/')}>Exit</button>
+          <button className="exit-btn" onClick={async () => { await signOut(auth); nav('/'); }}>Exit</button>
         </div>
       </div>
       <div className="sidebar">

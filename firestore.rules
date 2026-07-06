@@ -1,40 +1,45 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
+
+    // The agent's own account has no dealId claim on its token. A client's
+    // token (minted only by the verifyClientAccess Cloud Function, after
+    // it has confirmed their last name/zip server-side) always has one,
+    // scoped to exactly the transaction they verified for. This is the
+    // whole security model in two lines: agent = no claim = full access;
+    // client = claim = access to that one deal, nothing else.
+    function isAgent() {
+      return request.auth != null && request.auth.token.dealId == null;
+    }
+    function isVerifiedClientFor(txnId) {
+      return request.auth != null && request.auth.token.dealId == txnId;
+    }
+
     match /deals/{txnId} {
-      // Agent app queries the whole collection to build "All transactions" —
-      // only allowed when signed in as the agent.
-      allow list: if request.auth != null;
+      // Listing every transaction is an agent-only operation.
+      allow list: if isAgent();
 
-      // A client fetches exactly one deal, by its transaction ID, which
-      // only they and their agent know. This is an "unlisted ID" pattern:
-      // safe against strangers browsing your deals, not against someone
-      // who already has a specific ID guessing at last name/zip. Good
-      // enough for an MVP; see the README for how to harden this further
-      // (Cloud Function + custom auth token) before handling real PII.
-      allow get: if true;
+      // Reading one deal is allowed for the agent, or for a client who
+      // has already passed verification for this specific transaction.
+      // Nobody reads deal data without going through one of those two
+      // paths — there is no "if true" left anywhere in this file.
+      allow get: if isAgent() || isVerifiedClientFor(txnId);
 
-      // Only the signed-in agent can create/edit deals, mark milestones,
-      // or edit notes.
-      allow create, update, delete: if request.auth != null;
+      allow create, update, delete: if isAgent();
 
       match /messages/{messageId} {
-        // Both the agent (authenticated) and the client (not authenticated)
-        // need to post here, so this subcollection is intentionally looser
-        // than the parent deal document. It cannot be used to modify
-        // milestones, price, or any other deal field.
-        allow read: if true;
-        allow create: if request.resource.data.keys().hasOnly(['from', 'text', 'createdAt'])
+        allow read: if isAgent() || isVerifiedClientFor(txnId);
+        allow create: if (isAgent() || isVerifiedClientFor(txnId))
+                       && request.resource.data.keys().hasOnly(['from', 'text', 'createdAt'])
                        && request.resource.data.from in ['agent', 'client'];
         allow update, delete: if false;
       }
     }
 
-    // Watched by the Trigger Email extension. Every write here comes from
-    // an authenticated agent action (marking a milestone, sending a
-    // message, uploading a document) — clients never write here directly.
+    // Watched by the Trigger Email extension. Agent-only — clients never
+    // write here directly.
     match /mail/{mailId} {
-      allow create: if request.auth != null;
+      allow create: if isAgent();
       allow read, update, delete: if false;
     }
   }
